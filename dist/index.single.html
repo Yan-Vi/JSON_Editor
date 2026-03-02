@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    display: block;
+    padding: 32px;
+    background: radial-gradient(circle at top, #1f2937 0%, #111827 45%, #090d16 100%);
+    color: #e5e7eb;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.editor {
+    position: fixed;
+    width: min(860px, 100%);
+    height: min(78vh, 760px);
+    min-width: 420px;
+    min-height: 320px;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    resize: both;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    background: #0f172a;
+    box-shadow: 0 18px 48px rgba(2, 6, 23, 0.55);
+}
+
+.editor-tabs {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    left: 0;
+    height: 32px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    padding: 0 10px 0 10px;
+    border-bottom: 1px solid #334155;
+    background: #0e1628;
+}
+
+.editor-tab {
+    height: 22px;
+    padding: 0 10px;
+    border: 1px solid #334155;
+    border-radius: 6px 6px 0 0;
+    background: #172136;
+    color: #cbd5e1;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.editor-tab.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #eff6ff;
+}
+
+.editor-panel {
+    position: absolute;
+    inset: 68px 0 0 0;
+    overflow: auto;
+}
+
+.inspector {
+    padding: 18px;
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%);
+}
+
+.json-panel {
+    display: none;
+    padding: 12px;
+    background: #0f172a;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.json-panel.active {
+    display: flex;
+}
+
+.json-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.json-format-button {
+    height: 24px;
+    padding: 0 10px;
+    border: 1px solid #22c55e;
+    border-radius: 6px;
+    background: #15803d;
+    color: #dcfce7;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.json-format-button:hover {
+    background: #16a34a;
+}
+
+.json-format-button:focus {
+    outline: none;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.json-editor-wrap {
+    flex: 1;
+    min-height: 180px;
+    display: flex;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #0b1220;
+    overflow: hidden;
+}
+
+.json-line-numbers {
+    width: 48px;
+    padding: 10px 8px 10px 10px;
+    border-right: 1px solid #334155;
+    color: #64748b;
+    background: #0a1020;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: right;
+    white-space: pre;
+    overflow: hidden;
+    user-select: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.json-line-number {
+    height: 16.8px;
+}
+
+.json-line-number.error {
+    color: #fca5a5;
+    font-weight: 700;
+}
+
+.editor-panel.active {
+    display: block;
+}
+
+.json-panel.editor-panel.active {
+    display: flex;
+}
+
+.json-output {
+    width: calc(100% - 48px);
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    border: none;
+    border-radius: 0;
+    background: #0b1220;
+    color: #e2e8f0;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 10px;
+    resize: none;
+    outline: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.json-output.invalid {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.22);
+}
+
+.json-error {
+    min-height: 16px;
+    color: #fca5a5;
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    visibility: hidden;
+}
+
+.json-error.active {
+    visibility: visible;
+}
+
+.drag-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-bottom: 1px solid #334155;
+    background: #111827;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: lowercase;
+    cursor: move;
+    user-select: none;
+}
+
+.frame {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 3px 0;
+}
+
+.foldout-frame {
+    display: block;
+}
+
+.foldout-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.foldout-toggle {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #172136;
+    color: #dbeafe;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.row-drag-handle {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #172136;
+    color: #94a3b8;
+    font-size: 11px;
+    line-height: 1;
+    cursor: grab;
+}
+
+.row-drag-handle:active {
+    cursor: grabbing;
+}
+
+.frame.is-dragging {
+    opacity: 0.65;
+}
+
+.frame .label {
+    flex-shrink: 0;
+    width: 96px;
+    min-width: 72px;
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #93c5fd;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.drawer-type-select {
+    flex: none;
+    width: 66px;
+    height: 28px;
+    padding: 0 6px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #172136;
+    color: #cbd5e1;
+    font-size: 12px;
+    outline: none;
+}
+
+.drawer-type-select:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.delete-entry-button {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    background: #7f1d1d;
+    color: #fecaca;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.delete-entry-button:hover {
+    background: #991b1b;
+}
+
+.frame .label:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    background: #243447;
+}
+
+.frame > .text-value,
+.frame > .number-value {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #111827;
+    color: #f3f4f6;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.color-drawer-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.image-link-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vector3-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vector3-item {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.vector3-key {
+    flex: none;
+    color: #93c5fd;
+    font-size: 12px;
+    width: 8px;
+    text-transform: lowercase;
+}
+
+.vector3-field {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #111827;
+    color: #f3f4f6;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.vector3-field:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    background: #182134;
+}
+
+.image-link-stack > .text-value {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #111827;
+    color: #f3f4f6;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.color-drawer-stack > .text-value {
+    flex: 1;
+    min-width: 0;
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #111827;
+    color: #f3f4f6;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.image-link-stack > .text-value:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    background: #182134;
+}
+
+.color-drawer-stack > .text-value:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    background: #182134;
+}
+
+.color-picker-value {
+    flex: none;
+    width: 100%;
+    max-width: 20%;
+    min-width: 34px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    background: #111827;
+    cursor: pointer;
+}
+
+.image-link-preview {
+    flex: none;
+    height: 50px;
+    width: auto;
+    aspect-ratio: 1 / 1;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    object-fit: cover;
+    background: #0b1220;
+}
+
+.frame > .object-value,
+.frame > .array-value {
+    flex: 1;
+    min-width: 0;
+}
+
+.foldout-frame > .object-value,
+.foldout-frame > .array-value {
+    margin-top: 4px;
+}
+
+.foldout-header .drawer-type-select {
+    margin-left: auto;
+}
+
+.frame > .text-value:focus,
+.frame > .number-value:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    background: #182134;
+}
+
+.frame > .boolean-value {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid #475569;
+    border-radius: 5px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.add-entry-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid #22c55e;
+    border-radius: 8px;
+    background: #15803d;
+    color: #dcfce7;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 120ms ease, filter 120ms ease, background-color 120ms ease;
+}
+
+.add-entry-button:hover {
+    background: #16a34a;
+    filter: brightness(1.05);
+}
+
+.add-entry-button:active {
+    transform: translateY(1px);
+}
+
+.add-entry-row {
+    display: flex;
+    align-items: center;
+    margin: 4px 0 2px 0;
+}
+
+.object-value,
+.array-value {
+    width: 100%;
+    margin: 1px 0;
+    padding: 5px 0 4px 12px;
+    border-left: 2px solid rgba(148, 163, 184, 0.4);
+    border-radius: 0 10px 10px 0;
+    background: rgba(30, 41, 59, 0.22);
+}
+
+.object-value .object-value,
+.object-value .array-value,
+.array-value .object-value,
+.array-value .array-value {
+    margin: 3px 0;
+}
+
+.property-drawer .frame .label {
+    color: #d1d5db;
+}
+
+.property-drawer .text-value,
+.property-drawer .number-value,
+.property-drawer .boolean-value {
+    color: #f3f4f6;
+}
+</style>
+    <script>
+function setLabelVisibility(labelEl, label) {
+    labelEl.style.display = (label === "" || label === undefined || label === null) ? "none" : "";
+}
+
+</script>
+    <script>
+function createDeleteButton(container, label, onDelete) {
+    var deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.classList.add("delete-entry-button");
+    deleteButton.textContent = "×";
+    if (container.classList.contains("inspector") && label === "json") {
+        deleteButton.style.display = "none";
+    }
+    if (typeof onDelete === "function") {
+        deleteButton.addEventListener("click", onDelete);
+    }
+    return deleteButton;
+}
+
+</script>
+    <script>
+function createTypeSelector(drawerType, onTypeChange) {
+    var types = typeof drawerTypeList !== "undefined" ? drawerTypeList : ["string", "number", "boolean", "object", "array"];
+    var typeSelect = document.createElement("select");
+    typeSelect.classList.add("drawer-type-select");
+    typeSelect.innerHTML = types.map(function (type) {
+        return '<option value="' + type + '">' + type + "</option>";
+    }).join("");
+    typeSelect.value = drawerType;
+    if (typeof onTypeChange === "function") {
+        typeSelect.addEventListener("change", function () {
+            onTypeChange(typeSelect.value);
+        });
+    }
+    return typeSelect;
+}
+
+</script>
+    <script>
+function createAddEntryButton(onAddEntry) {
+    var row = document.createElement("div");
+    var addButton = document.createElement("button");
+    row.classList.add("add-entry-row");
+    addButton.type = "button";
+    addButton.classList.add("add-entry-button");
+    addButton.textContent = "+";
+    addButton.addEventListener("click", onAddEntry);
+    row.appendChild(addButton);
+    return row;
+}
+
+</script>
+    <script>
+var activeDragFrame = null;
+var activeDragParent = null;
+
+function reorderBoundCollectionFromDom(parentEl) {
+    var frames = Array.prototype.filter.call(parentEl.children, function (node) {
+        return node && node.classList && node.classList.contains("frame");
+    });
+    if (frames.length < 2) return false;
+    var bindings = frames.map(function (frame) {
+        return frame._bindingRef;
+    });
+    var firstBinding = bindings[0];
+    if (!firstBinding || !firstBinding.parent) return false;
+    var parentValue = firstBinding.parent;
+    if (Array.isArray(parentValue)) {
+        var nextOrder = [];
+        var validArrayOrder = true;
+        bindings.forEach(function (binding) {
+            if (!binding || typeof binding.key !== "number") {
+                validArrayOrder = false;
+                return;
+            }
+            if (binding.key < 0 || binding.key >= parentValue.length) {
+                validArrayOrder = false;
+                return;
+            }
+            nextOrder.push(parentValue[binding.key]);
+        });
+        if (!validArrayOrder || nextOrder.length !== parentValue.length) return false;
+        var arrayChanged = nextOrder.some(function (entry, index) {
+            return entry !== parentValue[index];
+        });
+        if (!arrayChanged) return false;
+        parentValue.length = 0;
+        nextOrder.forEach(function (entry) {
+            parentValue.push(entry);
+        });
+        return true;
+    }
+    if (!parentValue || typeof parentValue !== "object") return false;
+    var oldKeys = Object.keys(parentValue);
+    if (!oldKeys.length) return false;
+    var seen = {};
+    var orderedKeys = [];
+    bindings.forEach(function (binding) {
+        if (!binding || typeof binding.key !== "string") return;
+        if (!Object.prototype.hasOwnProperty.call(parentValue, binding.key)) return;
+        if (seen[binding.key]) return;
+        seen[binding.key] = true;
+        orderedKeys.push(binding.key);
+    });
+    oldKeys.forEach(function (key) {
+        if (seen[key]) return;
+        orderedKeys.push(key);
+    });
+    if (orderedKeys.length !== oldKeys.length) return false;
+    var objectChanged = orderedKeys.some(function (key, index) {
+        return key !== oldKeys[index];
+    });
+    if (!objectChanged) return false;
+    var nextObject = {};
+    orderedKeys.forEach(function (key) {
+        nextObject[key] = parentValue[key];
+    });
+    oldKeys.forEach(function (key) {
+        delete parentValue[key];
+    });
+    orderedKeys.forEach(function (key) {
+        parentValue[key] = nextObject[key];
+    });
+    return true;
+}
+
+function stopReorderDrag() {
+    if (!activeDragFrame) return;
+    var didReorder = false;
+    if (activeDragParent) {
+        didReorder = reorderBoundCollectionFromDom(activeDragParent);
+    }
+    activeDragFrame.classList.remove("is-dragging");
+    activeDragFrame = null;
+    activeDragParent = null;
+    document.body.style.userSelect = "";
+    if (!didReorder) return;
+    if (typeof notifyMutation === "function") {
+        notifyMutation();
+    }
+    if (typeof window !== "undefined" && typeof window.requestInspectorRefresh === "function") {
+        window.requestInspectorRefresh();
+    }
+}
+
+function onReorderDragMove(event) {
+    if (!activeDragFrame || !activeDragParent) return;
+    var target = document.elementFromPoint(event.clientX, event.clientY);
+    if (!target) return;
+    var targetFrame = target.closest(".frame");
+    if (!targetFrame || targetFrame === activeDragFrame) return;
+    if (targetFrame.parentNode !== activeDragParent) return;
+    var rect = targetFrame.getBoundingClientRect();
+    var insertBefore = event.clientY < rect.top + rect.height / 2;
+    if (insertBefore) {
+        if (activeDragFrame !== targetFrame.previousSibling) {
+            activeDragParent.insertBefore(activeDragFrame, targetFrame);
+        }
+    } else {
+        if (activeDragFrame !== targetFrame.nextSibling) {
+            activeDragParent.insertBefore(activeDragFrame, targetFrame.nextSibling);
+        }
+    }
+}
+
+function createRowDragHandle(frame) {
+    var dragHandle = document.createElement("button");
+    dragHandle.type = "button";
+    dragHandle.classList.add("row-drag-handle");
+    dragHandle.textContent = "⋮⋮";
+    dragHandle.addEventListener("mousedown", function (event) {
+        if (event.button !== 0) return;
+        activeDragFrame = frame;
+        activeDragParent = frame.parentNode;
+        frame.classList.add("is-dragging");
+        document.body.style.userSelect = "none";
+        event.preventDefault();
+    });
+    return dragHandle;
+}
+
+function createDrawerFrame(container, label, valueClass, drawerType, onTypeChange, onDelete, beforeNode, binding) {
+    var frame = document.createElement("div");
+    var dragHandle = createRowDragHandle(frame);
+    var labelEl = document.createElement("input");
+    var deleteButton = createDeleteButton(container, label, onDelete);
+    var typeSelect = createTypeSelector(drawerType, onTypeChange);
+    var isFoldout = valueClass === "object-value" || valueClass === "array-value";
+    labelEl.type = "text";
+    labelEl.classList.add("label");
+    var valueEl = isFoldout
+        ? document.createElement("div")
+        : document.createElement("input");
+    valueEl.classList.add(valueClass);
+    if (valueEl instanceof HTMLInputElement) {
+        valueEl.type = "text";
+    }
+    frame.classList.add("frame");
+    frame._bindingRef = binding || null;
+    if (isFoldout) {
+        frame.classList.add("foldout-frame");
+        if (binding && binding.path) {
+            frame.setAttribute("data-binding-path", binding.path);
+        }
+    }
+    if (beforeNode) {
+        container.insertBefore(frame, beforeNode);
+    } else {
+        container.appendChild(frame);
+    }
+    if (isFoldout) {
+        var headerEl = document.createElement("div");
+        var toggleEl = document.createElement("button");
+        var isRootInspectorDrawer = container.classList.contains("inspector") && label === "json";
+        var shouldStartCollapsed = !isRootInspectorDrawer;
+        headerEl.classList.add("foldout-header");
+        toggleEl.type = "button";
+        toggleEl.classList.add("foldout-toggle");
+        toggleEl.textContent = shouldStartCollapsed ? "▸" : "▾";
+        toggleEl.addEventListener("click", function () {
+            var isCollapsed = frame.classList.toggle("collapsed");
+            valueEl.hidden = isCollapsed;
+            toggleEl.textContent = isCollapsed ? "▸" : "▾";
+        });
+        frame.appendChild(headerEl);
+        headerEl.appendChild(dragHandle);
+        headerEl.appendChild(toggleEl);
+        headerEl.appendChild(labelEl);
+        headerEl.appendChild(typeSelect);
+        headerEl.appendChild(deleteButton);
+        frame.appendChild(valueEl);
+        if (shouldStartCollapsed) {
+            frame.classList.add("collapsed");
+            valueEl.hidden = true;
+        }
+    } else {
+        frame.appendChild(dragHandle);
+        frame.appendChild(labelEl);
+        frame.appendChild(typeSelect);
+        frame.appendChild(valueEl);
+        frame.appendChild(deleteButton);
+    }
+    labelEl.value = label;
+    setLabelVisibility(labelEl, label);
+    return { frame: frame, label: labelEl, value: valueEl };
+}
+
+window.addEventListener("mousemove", onReorderDragMove);
+window.addEventListener("mouseup", stopReorderDrag);
+
+</script>
+    <script>
+function drawString(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "text-value", "string", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    t.value.type = "text";
+    t.value.value = value == null ? "" : String(value);
+    t.value.addEventListener("input", function () {
+        ctx.setBoundValue(binding, t.value.value);
+    });
+    ctx.bindLabelInput(t.label, binding);
+}
+
+</script>
+    <script>
+function isHexColor(value) {
+    return /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(value);
+}
+
+function toLongHex(value) {
+    if (!isHexColor(value)) return "#000000";
+    if (value.length === 7) return value.toLowerCase();
+    return ("#" + value[1] + value[1] + value[2] + value[2] + value[3] + value[3]).toLowerCase();
+}
+
+function drawColor(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "text-value", "color", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    var colorStack = document.createElement("div");
+    var colorPicker = document.createElement("input");
+    colorStack.classList.add("color-drawer-stack");
+    colorPicker.classList.add("color-picker-value");
+    colorPicker.type = "color";
+    t.value.type = "text";
+    t.value.value = value == null ? "" : String(value);
+    colorPicker.value = toLongHex(t.value.value);
+    t.value.addEventListener("input", function () {
+        if (isHexColor(t.value.value)) {
+            colorPicker.value = toLongHex(t.value.value);
+        }
+        ctx.setBoundValue(binding, t.value.value);
+    });
+    colorPicker.addEventListener("input", function () {
+        t.value.value = colorPicker.value;
+        ctx.setBoundValue(binding, colorPicker.value);
+    });
+    ctx.bindLabelInput(t.label, binding);
+    t.frame.replaceChild(colorStack, t.value);
+    colorStack.appendChild(t.value);
+    colorStack.appendChild(colorPicker);
+}
+
+</script>
+    <script>
+function isImageUrl(value) {
+    if (typeof value !== "string") return false;
+    var v = value.trim();
+    if (v.length === 0) return false;
+    if (/^data:image\//i.test(v)) return true;
+    if (!/^https?:\/\//i.test(v)) return false;
+    return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(v);
+}
+
+function drawImageLink(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "text-value", "image-link", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    var imageStack = document.createElement("div");
+    var preview = document.createElement("img");
+    imageStack.classList.add("image-link-stack");
+    preview.classList.add("image-link-preview");
+    preview.alt = "preview";
+    t.value.type = "text";
+    t.value.value = value == null ? "" : String(value);
+    preview.src = t.value.value;
+    preview.hidden = !isImageUrl(t.value.value);
+    t.value.addEventListener("input", function () {
+        preview.src = t.value.value;
+        preview.hidden = !isImageUrl(t.value.value);
+        ctx.setBoundValue(binding, t.value.value);
+    });
+    preview.addEventListener("error", function () {
+        preview.hidden = true;
+    });
+    preview.addEventListener("load", function () {
+        preview.hidden = false;
+    });
+    ctx.bindLabelInput(t.label, binding);
+    t.frame.replaceChild(imageStack, t.value);
+    imageStack.appendChild(t.value);
+    imageStack.appendChild(preview);
+}
+
+</script>
+    <script>
+function toNumberOrZero(raw) {
+    var parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function drawInt(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "number-value", "number", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    t.value.type = "number";
+    t.value.value = value;
+    t.value.addEventListener("input", function () {
+        ctx.setBoundValue(binding, toNumberOrZero(t.value.value));
+    });
+    ctx.bindLabelInput(t.label, binding);
+}
+
+function drawFloat(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "number-value", "number", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    t.value.type = "number";
+    t.value.value = value;
+    t.value.addEventListener("input", function () {
+        ctx.setBoundValue(binding, toNumberOrZero(t.value.value));
+    });
+    ctx.bindLabelInput(t.label, binding);
+}
+
+</script>
+    <script>
+function isVector2Object(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    return (
+        Object.prototype.hasOwnProperty.call(value, "x") &&
+        Object.prototype.hasOwnProperty.call(value, "y") &&
+        typeof value.x === "number" &&
+        typeof value.y === "number" &&
+        !Object.prototype.hasOwnProperty.call(value, "z")
+    );
+}
+
+function isVector3Object(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+    return (
+        Object.prototype.hasOwnProperty.call(value, "x") &&
+        Object.prototype.hasOwnProperty.call(value, "y") &&
+        Object.prototype.hasOwnProperty.call(value, "z") &&
+        typeof value.x === "number" &&
+        typeof value.y === "number" &&
+        typeof value.z === "number"
+    );
+}
+
+function toFiniteNumber(raw) {
+    var parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function drawVector(ctx, container, label, value, beforeNode, binding, drawerType, axes) {
+    var axisList = Array.isArray(axes) && axes.length ? axes : ["x", "y", "z"];
+    var t = ctx.createDrawerFrame(container, label, "text-value", drawerType, function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    var vector = ctx.getBoundValue(binding, value);
+    if (!vector || typeof vector !== "object" || Array.isArray(vector)) {
+        vector = {};
+        axisList.forEach(function (axis) {
+            vector[axis] = 0;
+        });
+        ctx.setBoundValue(binding, vector);
+    } else {
+        axisList.forEach(function (axis) {
+            vector[axis] = toFiniteNumber(vector[axis]);
+        });
+    }
+    var stack = document.createElement("div");
+    stack.classList.add("vector3-stack");
+    axisList.forEach(function (axis) {
+        var axisWrap = document.createElement("div");
+        var axisKey = document.createElement("span");
+        var axisInput = document.createElement("input");
+        axisWrap.classList.add("vector3-item");
+        axisKey.classList.add("vector3-key");
+        axisInput.classList.add("vector3-field");
+        axisKey.textContent = axis;
+        axisInput.type = "number";
+        axisInput.step = "any";
+        axisInput.value = String(toFiniteNumber(vector[axis]));
+        axisInput.addEventListener("input", function () {
+            vector[axis] = toFiniteNumber(axisInput.value);
+            ctx.notifyMutation();
+        });
+        axisWrap.appendChild(axisKey);
+        axisWrap.appendChild(axisInput);
+        stack.appendChild(axisWrap);
+    });
+    ctx.bindLabelInput(t.label, binding);
+    t.frame.replaceChild(stack, t.value);
+}
+
+function drawVector2(ctx, container, label, value, beforeNode, binding) {
+    drawVector(ctx, container, label, value, beforeNode, binding, "vector2", ["x", "y"]);
+}
+
+function drawVector3(ctx, container, label, value, beforeNode, binding) {
+    drawVector(ctx, container, label, value, beforeNode, binding, "vector3", ["x", "y", "z"]);
+}
+
+</script>
+    <script>
+function drawBoolean(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "boolean-value", "boolean", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    t.value.type = "checkbox";
+    t.value.checked = !!value;
+    t.value.addEventListener("change", function () {
+        ctx.setBoundValue(binding, !!t.value.checked);
+    });
+    ctx.bindLabelInput(t.label, binding);
+}
+
+</script>
+    <script>
+function getNextObjectKey(obj) {
+    var base = "newKey";
+    var key = base;
+    var i = 1;
+    while (Object.prototype.hasOwnProperty.call(obj, key)) {
+        key = base + i;
+        i++;
+    }
+    return key;
+}
+
+function drawObject(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "object-value", "object", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    ctx.bindLabelInput(t.label, binding);
+    var addEntryControl = createAddEntryButton(function () {
+        var newKey = getNextObjectKey(value);
+        value[newKey] = "";
+        ctx.notifyMutation();
+        var newBinding = ctx.createChildBinding(binding, value, newKey);
+        ctx.DrawString(t.value, newKey, value[newKey], addEntryControl, newBinding);
+    });
+    for (let key in value) {
+        var childBinding = ctx.createChildBinding(binding, value, key);
+        ctx.getDrawer(value[key], childBinding)(t.value, key, value[key], undefined, childBinding);
+    }
+    t.value.appendChild(addEntryControl);
+    return t;
+}
+
+</script>
+    <script>
+function drawArray(ctx, container, label, value, beforeNode, binding) {
+    var t = ctx.createDrawerFrame(container, label, "array-value", "array", function (nextType) {
+        ctx.replaceDrawer(container, t.frame, label, nextType, value, binding);
+    }, function () {
+        ctx.deleteBoundValue(binding);
+        container.removeChild(t.frame);
+    }, beforeNode, binding);
+    var addEntryControl = createAddEntryButton(function () {
+        var nextValue = "";
+        value.push(nextValue);
+        ctx.notifyMutation();
+        var newBinding = ctx.createChildBinding(binding, value, value.length - 1);
+        ctx.DrawString(t.value, "", nextValue, addEntryControl, newBinding);
+    });
+    for (let i = 0; i < value.length; i++) {
+        var childBinding = ctx.createChildBinding(binding, value, i);
+        ctx.getDrawer(value[i], childBinding)(t.value, "", value[i], undefined, childBinding);
+    }
+    t.value.appendChild(addEntryControl);
+}
+
+</script>
+    <script>
+var drawerTypeList = ["string", "color", "image-link", "number", "vector2", "vector3", "boolean", "object", "array"];
+var inspectorGraph = typeof inspectorGraph !== "undefined" && inspectorGraph ? inspectorGraph : { typeHints: {} };
+var typeHints = inspectorGraph.typeHints;
+var drawerByTypeMap = {
+    string: DrawString,
+    color: DrawColor,
+    "image-link": DrawImageLink,
+    number: DrawFloat,
+    vector2: DrawVector2,
+    vector3: DrawVector3,
+    boolean: DrawBoolean,
+    array: DrawArray,
+    object: DrawObject
+};
+
+var typeValidatorMap = {
+    string: function (value) { return typeof value === "string"; },
+    color: function (value) { return typeof isHexColor === "function" && isHexColor(value); },
+    "image-link": function (value) { return typeof isImageUrl === "function" && isImageUrl(value); },
+    number: function (value) { return typeof value === "number"; },
+    vector2: function (value) { return typeof isVector2Object === "function" && isVector2Object(value); },
+    vector3: function (value) { return typeof isVector3Object === "function" && isVector3Object(value); },
+    boolean: function (value) { return typeof value === "boolean"; },
+    object: function (value) { return value !== null && typeof value === "object" && !Array.isArray(value); },
+    array: function (value) { return Array.isArray(value); }
+};
+var autoDetectTypePriorityMap = {
+    array: 1000,
+    vector2: 2000,
+    vector3: 2001,
+    object: 5000,
+    boolean: 7000,
+    number: 8000,
+    "image-link": 9000,
+    color: 9100,
+    string: 10000
+};
+
+function isHintValidForValue(type, value) {
+    if (type === "color" || type === "image-link") return typeof value === "string";
+    var validator = typeValidatorMap[type];
+    if (!validator) return false;
+    return validator(value);
+}
+
+function getHintedType(binding, value) {
+    if (!binding || !binding.path) return null;
+    var hinted = typeHints[binding.path];
+    if (!hinted) return null;
+    if (!isHintValidForValue(hinted, value)) return null;
+    return hinted;
+}
+
+function getDrawer(value, binding) {
+    var hintedType = getHintedType(binding, value);
+    if (hintedType) return getDrawerByType(hintedType);
+    if (value === null || value === undefined) return DrawString;
+    var sortedTypes = Object.keys(autoDetectTypePriorityMap).sort(function (a, b) {
+        return autoDetectTypePriorityMap[a] - autoDetectTypePriorityMap[b];
+    });
+    for (var i = 0; i < sortedTypes.length; i++) {
+        var type = sortedTypes[i];
+        var validator = typeValidatorMap[type];
+        if (!validator || !validator(value)) continue;
+        if (type === "number") return Number.isInteger(value) ? DrawInt : DrawFloat;
+        return getDrawerByType(type);
+    }
+    return DrawString;
+}
+
+function getDrawerByType(type) {
+    return drawerByTypeMap[type] || DrawString;
+}
+
+function getDrawerType(value, binding) {
+    var hintedType = getHintedType(binding, value);
+    if (hintedType) return hintedType;
+    if (Array.isArray(value)) return "array";
+    if (value !== null && typeof value === "object") {
+        if (typeof isVector2Object === "function" && isVector2Object(value)) return "vector2";
+        if (typeof isVector3Object === "function" && isVector3Object(value)) return "vector3";
+        return "object";
+    }
+    if (typeof value === "number") return "number";
+    if (typeof value === "boolean") return "boolean";
+    if (typeof value === "string" && isHexColor && isHexColor(value)) return "color";
+    if (typeof value === "string" && isImageUrl && isImageUrl(value)) return "image-link";
+    return "string";
+}
+
+function normalizeValueForType(value, type) {
+    if (type === "string") return value == null ? "" : String(value);
+    if (type === "color") {
+        if (typeof value === "string" && isHexColor && isHexColor(value)) return value;
+        return "#000000";
+    }
+    if (type === "image-link") return value == null ? "" : String(value);
+    if (type === "number") {
+        var parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+    if (type === "vector2") {
+        var next2 = { x: 0, y: 0 };
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+            next2.x = Number.isFinite(Number(value.x)) ? Number(value.x) : 0;
+            next2.y = Number.isFinite(Number(value.y)) ? Number(value.y) : 0;
+        }
+        return next2;
+    }
+    if (type === "vector3") {
+        var next = { x: 0, y: 0, z: 0 };
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+            next.x = Number.isFinite(Number(value.x)) ? Number(value.x) : 0;
+            next.y = Number.isFinite(Number(value.y)) ? Number(value.y) : 0;
+            next.z = Number.isFinite(Number(value.z)) ? Number(value.z) : 0;
+        }
+        return next;
+    }
+    if (type === "boolean") return !!value;
+    if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+    if (type === "array") return Array.isArray(value) ? value : [];
+    return value;
+}
+
+function isBound(binding) {
+    return !!(binding && binding.parent && binding.key !== undefined && binding.key !== null);
+}
+
+function escapePathKey(key) {
+    return String(key).replace(/\\/g, "\\\\").replace(/\./g, "\\.");
+}
+
+function appendBindingPath(parentPath, key) {
+    if (typeof key === "number") return parentPath + "[" + key + "]";
+    return parentPath + "." + escapePathKey(key);
+}
+
+function clearTypeHintsByPrefix(pathPrefix) {
+    Object.keys(typeHints).forEach(function (path) {
+        if (path === pathPrefix || path.indexOf(pathPrefix + ".") === 0 || path.indexOf(pathPrefix + "[") === 0) {
+            delete typeHints[path];
+        }
+    });
+}
+
+function remapTypeHintPrefix(oldPrefix, nextPrefix) {
+    var nextEntries = {};
+    Object.keys(typeHints).forEach(function (path) {
+        if (path === oldPrefix || path.indexOf(oldPrefix + ".") === 0 || path.indexOf(oldPrefix + "[") === 0) {
+            var suffix = path.slice(oldPrefix.length);
+            nextEntries[nextPrefix + suffix] = typeHints[path];
+            delete typeHints[path];
+        }
+    });
+    Object.keys(nextEntries).forEach(function (path) {
+        typeHints[path] = nextEntries[path];
+    });
+}
+
+function createChildBinding(parentBinding, parent, key) {
+    var parentPath = parentBinding && parentBinding.path ? parentBinding.path : "$";
+    return {
+        parent: parent,
+        key: key,
+        path: appendBindingPath(parentPath, key)
+    };
+}
+
+function notifyMutation() {
+    if (typeof window === "undefined") return;
+    if (typeof window.onInspectorMutation !== "function") return;
+    window.onInspectorMutation();
+}
+
+function getBoundValue(binding, fallbackValue) {
+    if (!isBound(binding)) return fallbackValue;
+    return binding.parent[binding.key];
+}
+
+function setBoundValue(binding, nextValue) {
+    if (!isBound(binding)) return;
+    if (binding.parent[binding.key] === nextValue) return;
+    binding.parent[binding.key] = nextValue;
+    notifyMutation();
+}
+
+function deleteBoundValue(binding) {
+    if (!isBound(binding)) return;
+    if (!Object.prototype.hasOwnProperty.call(binding.parent, binding.key)) return;
+    if (binding.path) clearTypeHintsByPrefix(binding.path);
+    if (Array.isArray(binding.parent)) {
+        binding.parent.splice(binding.key, 1);
+        if (binding.path) {
+            var arrayPath = binding.path.replace(/\[[0-9]+\]$/, "");
+            clearTypeHintsByPrefix(arrayPath);
+        }
+        notifyMutation();
+        return;
+    }
+    delete binding.parent[binding.key];
+    notifyMutation();
+}
+
+function renameBoundKey(binding, nextKey) {
+    if (!isBound(binding)) return;
+    if (Array.isArray(binding.parent)) return;
+    if (typeof nextKey !== "string") return;
+    var trimmedKey = nextKey.trim();
+    if (trimmedKey.length === 0) return;
+    var oldKey = binding.key;
+    if (trimmedKey === oldKey) return;
+    if (Object.prototype.hasOwnProperty.call(binding.parent, trimmedKey)) return;
+    var oldPath = binding.path;
+    binding.parent[trimmedKey] = binding.parent[oldKey];
+    delete binding.parent[oldKey];
+    binding.key = trimmedKey;
+    if (oldPath) {
+        var parentPath = oldPath.replace(/\.[^.]+$/, "");
+        var nextPath = appendBindingPath(parentPath, trimmedKey);
+        remapTypeHintPrefix(oldPath, nextPath);
+        binding.path = nextPath;
+    }
+    notifyMutation();
+}
+
+function bindLabelInput(labelEl, binding) {
+    if (!isBound(binding)) return;
+    if (Array.isArray(binding.parent)) return;
+    labelEl.addEventListener("change", function () {
+        renameBoundKey(binding, labelEl.value);
+    });
+}
+
+function replaceDrawer(container, frame, label, targetType, sourceValue, binding) {
+    var drawer = getDrawerByType(targetType);
+    var currentValue = getBoundValue(binding, sourceValue);
+    var normalizedValue = normalizeValueForType(currentValue, targetType);
+    setBoundValue(binding, normalizedValue);
+    if (binding && binding.path) typeHints[binding.path] = targetType;
+    drawer(container, label, normalizedValue, frame, binding);
+    container.removeChild(frame);
+    notifyMutation();
+}
+
+const context = {
+    createDrawerFrame: createDrawerFrame,
+    getDrawer: getDrawer,
+    getDrawerByType: getDrawerByType,
+    getDrawerType: getDrawerType,
+    replaceDrawer: replaceDrawer,
+    DrawString: DrawString,
+    createChildBinding: createChildBinding,
+    notifyMutation: notifyMutation,
+    getBoundValue: getBoundValue,
+    setBoundValue: setBoundValue,
+    deleteBoundValue: deleteBoundValue,
+    bindLabelInput: bindLabelInput
+};
+
+function exportTypeHintsSnapshot() {
+    return JSON.parse(JSON.stringify(typeHints));
+}
+
+function importTypeHintsSnapshot(nextTypeHints) {
+    var source = nextTypeHints && typeof nextTypeHints === "object" ? nextTypeHints : {};
+    Object.keys(typeHints).forEach(function (key) {
+        delete typeHints[key];
+    });
+    Object.keys(source).forEach(function (key) {
+        typeHints[key] = source[key];
+    });
+    inspectorGraph.typeHints = typeHints;
+}
+
+function DrawAny(container, label, value, beforeNode, binding) {
+    getDrawer(value, binding)(container, label, value, beforeNode, binding);
+}
+
+function DrawObject(container, label, value, beforeNode, binding) {
+    return drawObject(context, container, label, value, beforeNode, binding);
+}
+
+function DrawString(container, label, value, beforeNode, binding) {
+    return drawString(context, container, label, value, beforeNode, binding);
+}
+
+function DrawColor(container, label, value, beforeNode, binding) {
+    return drawColor(context, container, label, value, beforeNode, binding);
+}
+
+function DrawImageLink(container, label, value, beforeNode, binding) {
+    return drawImageLink(context, container, label, value, beforeNode, binding);
+}
+
+function DrawInt(container, label, value, beforeNode, binding) {
+    return drawInt(context, container, label, value, beforeNode, binding);
+}
+
+function DrawFloat(container, label, value, beforeNode, binding) {
+    return drawFloat(context, container, label, value, beforeNode, binding);
+}
+
+function DrawVector2(container, label, value, beforeNode, binding) {
+    return drawVector2(context, container, label, value, beforeNode, binding);
+}
+
+function DrawVector3(container, label, value, beforeNode, binding) {
+    return drawVector3(context, container, label, value, beforeNode, binding);
+}
+
+function DrawBoolean(container, label, value, beforeNode, binding) {
+    return drawBoolean(context, container, label, value, beforeNode, binding);
+}
+
+function DrawArray(container, label, value, beforeNode, binding) {
+    return drawArray(context, container, label, value, beforeNode, binding);
+}
+
+</script>
+    <script>
+function createJsonTabElements() {
+    var jsonPanel = document.createElement("div");
+    var jsonToolbar = document.createElement("div");
+    var formatJsonButton = document.createElement("button");
+    var jsonEditorWrap = document.createElement("div");
+    var jsonLineNumbers = document.createElement("div");
+    var jsonOutput = document.createElement("textarea");
+    var jsonError = document.createElement("div");
+    jsonPanel.classList.add("json-panel", "editor-panel");
+    jsonToolbar.classList.add("json-toolbar");
+    formatJsonButton.classList.add("json-format-button");
+    formatJsonButton.type = "button";
+    formatJsonButton.textContent = "format";
+    jsonEditorWrap.classList.add("json-editor-wrap");
+    jsonLineNumbers.classList.add("json-line-numbers");
+    jsonOutput.classList.add("json-output");
+    jsonOutput.readOnly = false;
+    jsonOutput._lineNumbers = jsonLineNumbers;
+    jsonError.classList.add("json-error");
+    jsonToolbar.appendChild(formatJsonButton);
+    jsonPanel.appendChild(jsonToolbar);
+    jsonEditorWrap.appendChild(jsonLineNumbers);
+    jsonEditorWrap.appendChild(jsonOutput);
+    jsonPanel.appendChild(jsonEditorWrap);
+    jsonPanel.appendChild(jsonError);
+    return {
+        panel: jsonPanel,
+        output: jsonOutput,
+        error: jsonError,
+        formatButton: formatJsonButton,
+        lineNumbers: jsonLineNumbers
+    };
+}
+
+</script>
+    <script>
+function setupJsonTextTab(config) {
+    var inspector = config.inspector;
+    var inspectorTab = config.inspectorTab;
+    var jsonTab = config.jsonTab;
+    var jsonPanel = config.jsonPanel;
+    var jsonOutput = config.jsonOutput;
+    var jsonError = config.jsonError;
+    var formatJsonButton = config.formatJsonButton;
+    var state = config.state;
+    var shouldDeferHistoryCommit = config.shouldDeferHistoryCommit;
+    var markHistoryDeferred = config.markHistoryDeferred;
+    var commitHistory = config.commitHistory;
+    var syncJsonOutput = config.syncJsonOutput;
+    var renderInspector = config.renderInspector;
+    var syncTimer = null;
+    syncJsonLineNumbers(jsonOutput);
+
+    inspectorTab.addEventListener("click", function () {
+        inspector.classList.add("active");
+        jsonPanel.classList.remove("active");
+        inspectorTab.classList.add("active");
+        jsonTab.classList.remove("active");
+        setJsonValidationError(jsonOutput, jsonError, "");
+    });
+    jsonTab.addEventListener("click", function () {
+        inspector.classList.remove("active");
+        jsonPanel.classList.add("active");
+        inspectorTab.classList.remove("active");
+        jsonTab.classList.add("active");
+        syncJsonOutput(jsonOutput, state);
+        syncJsonLineNumbers(jsonOutput);
+        setJsonValidationError(jsonOutput, jsonError, "", null);
+    });
+    formatJsonButton.addEventListener("click", function () {
+        var formatted = formatJsonString(jsonOutput.value);
+        if (!formatted.ok) {
+            setJsonValidationError(
+                jsonOutput,
+                jsonError,
+                formatted.errorMessage,
+                resolveJsonErrorLine(jsonOutput.value, formatted.errorObject)
+            );
+            return;
+        }
+        jsonOutput.value = formatted.value;
+        syncJsonLineNumbers(jsonOutput);
+        setJsonValidationError(jsonOutput, jsonError, "", null);
+        var hasApplied = rebuildStateFromJsonText(inspector, jsonOutput, jsonError, state, jsonOutput.value, renderInspector);
+        if (!hasApplied) return;
+        if (shouldDeferHistoryCommit(document.activeElement)) {
+            markHistoryDeferred();
+            return;
+        }
+        commitHistory();
+    });
+    jsonOutput.addEventListener("keydown", function (event) {
+        if (event.key !== "Tab") return;
+        event.preventDefault();
+        insertSpacesAtCaret(jsonOutput, "  ");
+        jsonOutput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    jsonOutput.addEventListener("input", function () {
+        syncJsonLineNumbers(jsonOutput);
+        setJsonValidationError(jsonOutput, jsonError, "", null);
+        if (syncTimer) {
+            window.clearTimeout(syncTimer);
+        }
+        syncTimer = window.setTimeout(function () {
+            var hasApplied = rebuildStateFromJsonText(inspector, jsonOutput, jsonError, state, jsonOutput.value, renderInspector);
+            if (hasApplied && shouldDeferHistoryCommit(document.activeElement)) {
+                markHistoryDeferred();
+                return;
+            }
+            if (hasApplied) {
+                commitHistory();
+            }
+        }, 220);
+    });
+    jsonOutput.addEventListener("scroll", function () {
+        var lineNumbers = jsonOutput._lineNumbers;
+        if (!lineNumbers) return;
+        lineNumbers.scrollTop = jsonOutput.scrollTop;
+    });
+    window.setInterval(function () {
+        if (!jsonPanel.classList.contains("active")) return;
+        if (document.activeElement === jsonOutput) return;
+        syncJsonOutput(jsonOutput, state);
+        syncJsonLineNumbers(jsonOutput);
+    }, 200);
+}
+
+function syncJsonLineNumbers(jsonOutput) {
+    var lineNumbers = jsonOutput && jsonOutput._lineNumbers;
+    if (!lineNumbers) return;
+    var value = jsonOutput.value || "";
+    var lineCount = value.length ? value.split("\n").length : 1;
+    var errorLine = jsonOutput._errorLine;
+    lineNumbers.innerHTML = "";
+    for (var i = 1; i <= lineCount; i++) {
+        var row = document.createElement("div");
+        row.classList.add("json-line-number");
+        if (errorLine === i) {
+            row.classList.add("error");
+        }
+        row.textContent = String(i);
+        lineNumbers.appendChild(row);
+    }
+    lineNumbers.scrollTop = jsonOutput.scrollTop;
+}
+
+function rebuildStateFromJsonText(inspector, jsonOutput, jsonError, state, rawJsonText, renderInspector) {
+    try {
+        var nextJson = JSON.parse(rawJsonText);
+        state.json = nextJson;
+        state.jsonBinding.parent = state;
+        if (typeof importTypeHintsSnapshot === "function") {
+            importTypeHintsSnapshot({});
+        }
+        renderInspector(inspector, state);
+        setJsonValidationError(jsonOutput, jsonError, "", null);
+        return true;
+    } catch (err) {
+        setJsonValidationError(
+            jsonOutput,
+            jsonError,
+            err && err.message ? err.message : "Invalid JSON",
+            resolveJsonErrorLine(rawJsonText, err)
+        );
+        return false;
+    }
+}
+
+function setJsonValidationError(jsonOutput, jsonError, message, errorLine) {
+    var text = message || "";
+    if (text.length) {
+        jsonOutput.classList.add("invalid");
+        jsonError.textContent = text;
+        jsonError.classList.add("active");
+        jsonOutput._errorLine = typeof errorLine === "number" && errorLine > 0 ? errorLine : null;
+        syncJsonLineNumbers(jsonOutput);
+        return;
+    }
+    jsonOutput.classList.remove("invalid");
+    jsonError.textContent = "";
+    jsonError.classList.remove("active");
+    jsonOutput._errorLine = null;
+    syncJsonLineNumbers(jsonOutput);
+}
+
+function formatJsonString(rawText) {
+    try {
+        var parsed = JSON.parse(rawText);
+        return { ok: true, value: JSON.stringify(parsed, null, 2) };
+    } catch (err) {
+        return {
+            ok: false,
+            errorMessage: err && err.message ? err.message : "Invalid JSON",
+            errorObject: err
+        };
+    }
+}
+
+function insertSpacesAtCaret(textarea, spaces) {
+    var start = textarea.selectionStart;
+    var end = textarea.selectionEnd;
+    var current = textarea.value;
+    textarea.value = current.slice(0, start) + spaces + current.slice(end);
+    var nextCursor = start + spaces.length;
+    textarea.selectionStart = nextCursor;
+    textarea.selectionEnd = nextCursor;
+}
+
+function resolveJsonErrorLine(rawJsonText, errorObject) {
+    if (!errorObject || typeof errorObject.message !== "string") return null;
+    var message = errorObject.message;
+    var lineColumnMatch = message.match(/line\s+([0-9]+)\s+column\s+([0-9]+)/i);
+    if (lineColumnMatch) {
+        var line = Number(lineColumnMatch[1]);
+        return Number.isFinite(line) && line > 0 ? line : null;
+    }
+    var positionMatch = message.match(/position\s+([0-9]+)/i);
+    if (!positionMatch) return null;
+    var position = Number(positionMatch[1]);
+    if (!Number.isFinite(position) || position < 0) return null;
+    return rawJsonText.slice(0, position).split("\n").length;
+}
+
+</script>
+    <script>
+function main() {
+    let state =
+    {
+        json: {
+            "text": "text",
+            "color": "#000000",
+            "int": 16,
+            "float": 16.5,
+            "boolean": true,
+            "dictionary": {
+                "key": "value",
+                "key2": "value2"
+            },
+            "array": [1, { "key": "value" }, 3],
+            "object": {
+                "name": "John",
+                "age": 30,
+                "position": {
+                    "x": 1,
+                    "y": 2,
+                    "z": 3
+                }
+            }
+        },
+        jsonBinding: { path: "$", parent: null, key: "json" },
+        history: null
+    };
+    state.jsonBinding.parent = state;
+    ensureHistory(state);
+    var pendingHistoryCommit = false;
+
+    const editor = document.querySelector(".editor");
+    const dragHandle = document.createElement("div");
+    const tabs = document.createElement("div");
+    const inspectorTab = document.createElement("button");
+    const jsonTab = document.createElement("button");
+    const inspector = document.createElement("div");
+    const jsonTabElements = createJsonTabElements();
+    const jsonPanel = jsonTabElements.panel;
+    const jsonOutput = jsonTabElements.output;
+    const jsonError = jsonTabElements.error;
+    const formatJsonButton = jsonTabElements.formatButton;
+    dragHandle.classList.add("drag-handle");
+    dragHandle.textContent = "json editor";
+    tabs.classList.add("editor-tabs");
+    inspectorTab.type = "button";
+    jsonTab.type = "button";
+    inspectorTab.classList.add("editor-tab", "active");
+    jsonTab.classList.add("editor-tab");
+    inspectorTab.textContent = "inspector";
+    jsonTab.textContent = "json";
+    inspector.classList.add("inspector", "editor-panel", "active");
+    tabs.appendChild(inspectorTab);
+    tabs.appendChild(jsonTab);
+    editor.appendChild(dragHandle);
+    editor.appendChild(tabs);
+    editor.appendChild(inspector);
+    editor.appendChild(jsonPanel);
+    enableEditorDragging(editor, dragHandle);
+    placeEditorInCenter(editor);
+    renderInspector(inspector, state);
+    window.onInspectorMutation = function () {
+        if (shouldDeferHistoryCommit(document.activeElement)) {
+            pendingHistoryCommit = true;
+            return;
+        }
+        recordHistoryChange(state);
+        if (jsonPanel.classList.contains("active") && document.activeElement !== jsonOutput) {
+            syncJsonOutput(jsonOutput, state);
+        }
+    };
+    window.requestInspectorRefresh = function () {
+        var foldoutStates = captureFoldoutStates(inspector);
+        renderInspector(inspector, state);
+        applyFoldoutStates(inspector, foldoutStates);
+        if (jsonPanel.classList.contains("active") && document.activeElement !== jsonOutput) {
+            syncJsonOutput(jsonOutput, state);
+        }
+    };
+    document.addEventListener("focusout", function () {
+        if (!pendingHistoryCommit) return;
+        window.setTimeout(function () {
+            if (shouldDeferHistoryCommit(document.activeElement)) return;
+            pendingHistoryCommit = false;
+            recordHistoryChange(state);
+        }, 0);
+    });
+    registerHistoryShortcuts(document, function () {
+        if (!undoHistory(state)) return;
+        var foldoutStates = captureFoldoutStates(inspector);
+        renderInspector(inspector, state);
+        applyFoldoutStates(inspector, foldoutStates);
+        syncJsonOutput(jsonOutput, state);
+        setJsonValidationError(jsonOutput, jsonError, "");
+    }, function () {
+        if (!redoHistory(state)) return;
+        var foldoutStates = captureFoldoutStates(inspector);
+        renderInspector(inspector, state);
+        applyFoldoutStates(inspector, foldoutStates);
+        syncJsonOutput(jsonOutput, state);
+        setJsonValidationError(jsonOutput, jsonError, "");
+    });
+    setupJsonTextTab({
+        inspector: inspector,
+        inspectorTab: inspectorTab,
+        jsonTab: jsonTab,
+        jsonPanel: jsonPanel,
+        jsonOutput: jsonOutput,
+        jsonError: jsonError,
+        formatJsonButton: formatJsonButton,
+        state: state,
+        shouldDeferHistoryCommit: shouldDeferHistoryCommit,
+        markHistoryDeferred: function () {
+            pendingHistoryCommit = true;
+        },
+        commitHistory: function () {
+            recordHistoryChange(state);
+        },
+        syncJsonOutput: syncJsonOutput,
+        renderInspector: renderInspector
+    });
+}
+
+function renderInspector(inspector, state) {
+    inspector.innerHTML = "";
+    DrawObject(inspector, "json", state.json, undefined, state.jsonBinding);
+}
+
+function syncJsonOutput(jsonOutput, state) {
+    jsonOutput.value = JSON.stringify(state.json, null, 2);
+    if (typeof syncJsonLineNumbers === "function") {
+        syncJsonLineNumbers(jsonOutput);
+    }
+}
+
+function ensureHistory(state) {
+    if (state.history) return state.history;
+    var initialTypeHints = typeof exportTypeHintsSnapshot === "function" ? exportTypeHintsSnapshot() : {};
+    state.history = {
+        undoStack: [],
+        redoStack: [],
+        committed: {
+            json: deepClone(state.json),
+            typeHints: deepClone(initialTypeHints)
+        },
+        isApplying: false,
+        maxEntries: 400
+    };
+    return state.history;
+}
+
+function recordHistoryChange(state) {
+    var history = ensureHistory(state);
+    if (history.isApplying) return;
+    var nextTypeHints = typeof exportTypeHintsSnapshot === "function" ? exportTypeHintsSnapshot() : {};
+    var jsonOps = [];
+    var typeHintOps = [];
+    collectDiffOps(history.committed.json, state.json, [], jsonOps);
+    collectDiffOps(history.committed.typeHints, nextTypeHints, [], typeHintOps);
+    if (jsonOps.length === 0 && typeHintOps.length === 0) return;
+    var historyEntry = {
+        forward: {
+            jsonOps: jsonOps,
+            typeHintOps: typeHintOps
+        },
+        backward: {
+            jsonOps: invertOps(jsonOps),
+            typeHintOps: invertOps(typeHintOps)
+        }
+    };
+    history.undoStack.push(historyEntry);
+    if (history.undoStack.length > history.maxEntries) {
+        history.undoStack.shift();
+    }
+    history.redoStack.length = 0;
+    history.committed = {
+        json: deepClone(state.json),
+        typeHints: deepClone(nextTypeHints)
+    };
+}
+
+function undoHistory(state) {
+    var history = ensureHistory(state);
+    if (history.undoStack.length === 0) return false;
+    var historyEntry = history.undoStack.pop();
+    history.isApplying = true;
+    state.json = applyOpsToValue(state.json, historyEntry.backward.jsonOps);
+    var currentTypeHints = typeof exportTypeHintsSnapshot === "function" ? exportTypeHintsSnapshot() : {};
+    var nextTypeHints = applyOpsToValue(currentTypeHints, historyEntry.backward.typeHintOps);
+    if (typeof importTypeHintsSnapshot === "function") {
+        importTypeHintsSnapshot(nextTypeHints);
+    }
+    state.jsonBinding.parent = state;
+    history.isApplying = false;
+    history.redoStack.push(historyEntry);
+    history.committed = {
+        json: deepClone(state.json),
+        typeHints: deepClone(nextTypeHints)
+    };
+    return true;
+}
+
+function redoHistory(state) {
+    var history = ensureHistory(state);
+    if (history.redoStack.length === 0) return false;
+    var historyEntry = history.redoStack.pop();
+    history.isApplying = true;
+    state.json = applyOpsToValue(state.json, historyEntry.forward.jsonOps);
+    var currentTypeHints = typeof exportTypeHintsSnapshot === "function" ? exportTypeHintsSnapshot() : {};
+    var nextTypeHints = applyOpsToValue(currentTypeHints, historyEntry.forward.typeHintOps);
+    if (typeof importTypeHintsSnapshot === "function") {
+        importTypeHintsSnapshot(nextTypeHints);
+    }
+    state.jsonBinding.parent = state;
+    history.isApplying = false;
+    history.undoStack.push(historyEntry);
+    history.committed = {
+        json: deepClone(state.json),
+        typeHints: deepClone(nextTypeHints)
+    };
+    return true;
+}
+
+function deepClone(value) {
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+}
+
+function isObjectValue(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function createSetOp(path, value, hadValue, oldValue) {
+    return {
+        type: "set",
+        path: path.slice(),
+        value: deepClone(value),
+        hadValue: !!hadValue,
+        oldValue: hadValue ? deepClone(oldValue) : undefined
+    };
+}
+
+function createRemoveOp(path, oldValue) {
+    return {
+        type: "remove",
+        path: path.slice(),
+        oldValue: deepClone(oldValue)
+    };
+}
+
+function collectDiffOps(prevValue, nextValue, path, ops) {
+    if (Array.isArray(prevValue) || Array.isArray(nextValue)) {
+        if (!Array.isArray(prevValue) || !Array.isArray(nextValue) || JSON.stringify(prevValue) !== JSON.stringify(nextValue)) {
+            ops.push(createSetOp(path, nextValue, true, prevValue));
+        }
+        return;
+    }
+    if (isObjectValue(prevValue) && isObjectValue(nextValue)) {
+        var prevKeys = Object.keys(prevValue);
+        var nextKeys = Object.keys(nextValue);
+        var sameKeyCount = prevKeys.length === nextKeys.length;
+        var sameKeyOrder = sameKeyCount && prevKeys.every(function (key, index) {
+            return key === nextKeys[index];
+        });
+        if (!sameKeyOrder) {
+            ops.push(createSetOp(path, nextValue, true, prevValue));
+            return;
+        }
+        Object.keys(prevValue).forEach(function (key) {
+            if (Object.prototype.hasOwnProperty.call(nextValue, key)) return;
+            ops.push(createRemoveOp(path.concat(key), prevValue[key]));
+        });
+        Object.keys(nextValue).forEach(function (key) {
+            if (Object.prototype.hasOwnProperty.call(prevValue, key)) {
+                collectDiffOps(prevValue[key], nextValue[key], path.concat(key), ops);
+                return;
+            }
+            ops.push(createSetOp(path.concat(key), nextValue[key], false, undefined));
+        });
+        return;
+    }
+    if (prevValue === nextValue) return;
+    if (Number.isNaN(prevValue) && Number.isNaN(nextValue)) return;
+    ops.push(createSetOp(path, nextValue, true, prevValue));
+}
+
+function invertOps(ops) {
+    var inverse = [];
+    for (var i = ops.length - 1; i >= 0; i--) {
+        var op = ops[i];
+        if (op.type === "remove") {
+            inverse.push({
+                type: "set",
+                path: op.path.slice(),
+                value: deepClone(op.oldValue),
+                hadValue: false,
+                oldValue: undefined
+            });
+            continue;
+        }
+        if (op.hadValue) {
+            inverse.push({
+                type: "set",
+                path: op.path.slice(),
+                value: deepClone(op.oldValue),
+                hadValue: true,
+                oldValue: deepClone(op.value)
+            });
+            continue;
+        }
+        inverse.push({
+            type: "remove",
+            path: op.path.slice(),
+            oldValue: deepClone(op.value)
+        });
+    }
+    return inverse;
+}
+
+function applyOpsToValue(rootValue, ops) {
+    var holder = { root: rootValue };
+    ops.forEach(function (op) {
+        if (op.type === "set") {
+            setPathValue(holder, "root", op.path, op.value);
+            return;
+        }
+        if (op.type === "remove") {
+            removePathValue(holder, "root", op.path);
+        }
+    });
+    return holder.root;
+}
+
+function setPathValue(holder, rootKey, path, value) {
+    if (path.length === 0) {
+        holder[rootKey] = deepClone(value);
+        return;
+    }
+    var node = holder[rootKey];
+    if (node === undefined || node === null || typeof node !== "object") {
+        node = typeof path[0] === "number" ? [] : {};
+        holder[rootKey] = node;
+    }
+    for (var i = 0; i < path.length - 1; i++) {
+        var key = path[i];
+        var nextKey = path[i + 1];
+        if (node[key] === undefined || node[key] === null || typeof node[key] !== "object") {
+            node[key] = typeof nextKey === "number" ? [] : {};
+        }
+        node = node[key];
+    }
+    node[path[path.length - 1]] = deepClone(value);
+}
+
+function removePathValue(holder, rootKey, path) {
+    if (path.length === 0) return;
+    var node = holder[rootKey];
+    if (node === undefined || node === null || typeof node !== "object") return;
+    for (var i = 0; i < path.length - 1; i++) {
+        var key = path[i];
+        if (node[key] === undefined || node[key] === null || typeof node[key] !== "object") return;
+        node = node[key];
+    }
+    var lastKey = path[path.length - 1];
+    if (Array.isArray(node) && typeof lastKey === "number") {
+        node.splice(lastKey, 1);
+        return;
+    }
+    delete node[lastKey];
+}
+
+function shouldDeferHistoryCommit(activeElement) {
+    if (!activeElement) return false;
+    if (activeElement.tagName === "TEXTAREA") return true;
+    if (activeElement.tagName !== "INPUT") return false;
+    return String(activeElement.type || "").toLowerCase() === "text";
+}
+
+function captureFoldoutStates(inspector) {
+    var stateByPath = {};
+    inspector.querySelectorAll(".foldout-frame[data-binding-path]").forEach(function (frame) {
+        var path = frame.getAttribute("data-binding-path");
+        if (!path) return;
+        stateByPath[path] = frame.classList.contains("collapsed");
+    });
+    return stateByPath;
+}
+
+function applyFoldoutStates(inspector, stateByPath) {
+    if (!stateByPath) return;
+    inspector.querySelectorAll(".foldout-frame[data-binding-path]").forEach(function (frame) {
+        var path = frame.getAttribute("data-binding-path");
+        if (!path || !Object.prototype.hasOwnProperty.call(stateByPath, path)) return;
+        var shouldBeCollapsed = !!stateByPath[path];
+        var valueEl = frame.querySelector(".object-value, .array-value");
+        var toggleEl = frame.querySelector(".foldout-toggle");
+        if (shouldBeCollapsed) {
+            frame.classList.add("collapsed");
+            if (valueEl) valueEl.hidden = true;
+            if (toggleEl) toggleEl.textContent = "▸";
+            return;
+        }
+        frame.classList.remove("collapsed");
+        if (valueEl) valueEl.hidden = false;
+        if (toggleEl) toggleEl.textContent = "▾";
+    });
+}
+
+function registerHistoryShortcuts(target, onUndo, onRedo) {
+    target.addEventListener("keydown", function (event) {
+        if (event.altKey) return;
+        var active = document.activeElement;
+        var isTypingTarget = !!active && (
+            active.tagName === "INPUT" ||
+            active.tagName === "TEXTAREA" ||
+            active.isContentEditable
+        );
+        if (isTypingTarget) return;
+        var key = String(event.key || "").toLowerCase();
+        var hasPrimaryModifier = event.metaKey || event.ctrlKey;
+        if (!hasPrimaryModifier) return;
+        var isUndo = key === "z" && !event.shiftKey;
+        var isRedo = (key === "z" && event.shiftKey) || (!event.metaKey && key === "y");
+        if (!isUndo && !isRedo) return;
+        event.preventDefault();
+        if (isUndo) {
+            onUndo();
+            return;
+        }
+        onRedo();
+    });
+}
+
+function placeEditorInCenter(editor) {
+    var rect = editor.getBoundingClientRect();
+    var left = Math.max(12, Math.round((window.innerWidth - rect.width) / 2));
+    var top = Math.max(12, Math.round((window.innerHeight - rect.height) / 2));
+    editor.style.left = left + "px";
+    editor.style.top = top + "px";
+}
+
+function enableEditorDragging(editor, dragHandle) {
+    var dragging = false;
+    var startX = 0;
+    var startY = 0;
+    var originLeft = 0;
+    var originTop = 0;
+
+    dragHandle.addEventListener("mousedown", function (event) {
+        if (event.button !== 0) return;
+        dragging = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        originLeft = editor.offsetLeft;
+        originTop = editor.offsetTop;
+        document.body.style.userSelect = "none";
+    });
+
+    window.addEventListener("mousemove", function (event) {
+        if (!dragging) return;
+        var nextLeft = originLeft + event.clientX - startX;
+        var nextTop = originTop + event.clientY - startY;
+        var maxLeft = Math.max(12, window.innerWidth - editor.offsetWidth - 12);
+        var maxTop = Math.max(12, window.innerHeight - editor.offsetHeight - 12);
+        editor.style.left = Math.min(Math.max(12, nextLeft), maxLeft) + "px";
+        editor.style.top = Math.min(Math.max(12, nextTop), maxTop) + "px";
+    });
+
+    window.addEventListener("mouseup", function () {
+        dragging = false;
+        document.body.style.userSelect = "";
+    });
+}
+
+document.addEventListener("DOMContentLoaded", main);
+
+</script>
+    <title>Document</title>
+</head>
+<body>
+    <h1 class="editor">Hello World</h1>
+</body>
+</html>
