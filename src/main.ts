@@ -5,7 +5,7 @@ import { createEditor } from "./features/inspectorTab/drawers/nodeDrawer";
 import { createInspectorRuntime } from "./features/inspectorTab/runtime";
 import { ensureHistory, recordHistoryChange, redoHistory, registerHistoryShortcuts, shouldDeferHistoryCommit, undoHistory } from "./features/history/history";
 import { setJsonValidationError } from "./features/jsonTab/jsonTab";
-import defaultJson from "../docs/test.json";
+import defaultJson from "../resources/test.json";
 
 document.addEventListener("DOMContentLoaded", main);
 
