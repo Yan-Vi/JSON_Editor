@@ -29,8 +29,7 @@ export function isImageUrl(value: unknown): value is string {
   const v = value.trim();
   if (v.length === 0) return false;
   if (/^data:image\//i.test(v)) return true;
-  if (!/^https?:\/\//i.test(v)) return false;
-  return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(v);
+  return /^https?:\/\//i.test(v);
 }
 
 export function isVector2Object(value: unknown): value is { x: number; y: number } {
