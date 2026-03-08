@@ -10,11 +10,9 @@ Visual JSON editor with inspector-style property editing and raw JSON tab. The d
 
 **Tab switching** – Switching to JSON syncs current state into the textarea. Switching to Inspector shows the live state. Both tabs operate on the same in-memory tree.
 
-## Undo / Redo
+**Shortcuts**: Ctrl/Cmd+Z (undo), Ctrl/Cmd+Shift+Z or Ctrl+Y (redo)
 
-- **Shortcuts**: Ctrl/Cmd+Z (undo), Ctrl/Cmd+Shift+Z or Ctrl+Y (redo)
-- **Scope**: Applies when focus is outside text inputs/textarea. While typing, commits are deferred until blur
-- **History**: JSON and drawer type hints together, up to 400 entries. Redo stack clears on new edits
+**History**: JSON and drawer type hints together, up to 400 entries. Redo stack clears on new edits
 
 ## Tech
 
@@ -30,6 +28,8 @@ Visual JSON editor with inspector-style property editing and raw JSON tab. The d
 | `npm run build` | Build to `docs/` |
 | `npm run preview` | Preview production build |
 | `npm run typecheck` | Run TypeScript check |
+
+GitHub Actions (`.github/workflows/build.yml`) runs `npm ci` and `npm run build` on push/PR, and deploys to GitHub Pages on push to `main` or `master`. Set Pages source to GitHub Actions in repo settings.
 
 ## Drawers
 
