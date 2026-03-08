@@ -25,11 +25,13 @@ export const imageLinkDrawerPlugin: DrawerPlugin = {
     preview.alt = "preview";
     input.type = "text";
     input.value = args.value == null ? "" : String(args.value);
-    preview.src = input.value;
+    const url = input.value.trim();
     preview.hidden = !isImageUrl(input.value);
+    if (url && isImageUrl(url)) preview.src = url;
     input.addEventListener("input", () => {
-      preview.src = input.value;
+      const nextUrl = input.value.trim();
       preview.hidden = !isImageUrl(input.value);
+      if (nextUrl && isImageUrl(nextUrl)) preview.src = nextUrl;
       api.setBoundValue(args.binding, input.value);
     });
     preview.addEventListener("error", () => {
