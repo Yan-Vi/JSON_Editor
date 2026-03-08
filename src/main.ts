@@ -5,11 +5,12 @@ import { createEditor } from "./features/inspectorTab/drawers/nodeDrawer";
 import { createInspectorRuntime } from "./features/inspectorTab/runtime";
 import { ensureHistory, recordHistoryChange, redoHistory, registerHistoryShortcuts, shouldDeferHistoryCommit, undoHistory } from "./features/history/history";
 import { setJsonValidationError } from "./features/jsonTab/jsonTab";
+import defaultJson from "../docs/test.json";
 
 document.addEventListener("DOMContentLoaded", main);
 
 function main(): void {
-  const state = createInitialState();
+  const state = createInitialState(defaultJson as JsonEditorState["json"]);
   let pendingHistoryCommit = false;
   const editor = document.querySelector(".editor");
   if (!(editor instanceof HTMLElement)) return;
@@ -114,32 +115,9 @@ function main(): void {
   placeEditorInCenter(editor);
 }
 
-function createInitialState(): JsonEditorState {
+function createInitialState(initialJson: JsonEditorState["json"]): JsonEditorState {
   const state: JsonEditorState = {
-    json: {
-      nodes: {
-        nodeA: {
-          position: { x: 24, y: 24 },
-          bounds: { width: 320, height: 220 }
-        },
-        nodeB: {
-          position: { x: 380, y: 96 },
-          bounds: { width: 320, height: 220 }
-        }
-      },
-      edges: {
-        edgeA: { sourceId: "nodeA", targetId: "nodeB" }
-      },
-      data: {
-        nodeA: {
-          count: 1,
-          active: true
-        },
-        nodeB: {
-          color: "#ff4242"
-        }
-      }
-    },
+    json: initialJson,
     jsonBinding: { path: "$", parent: {} as Record<string | number, unknown>, key: "json" },
     history: null
   };
