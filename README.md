@@ -1,5 +1,7 @@
 # JSON Editor
 
+**[Live demo](https://yan-vi.github.io/JSON_Editor/)**
+
 Visual JSON editor with inspector-style property editing and raw JSON tab. The drawer UI is inspired by data inspectors in game engines.
 
 ## Editor
