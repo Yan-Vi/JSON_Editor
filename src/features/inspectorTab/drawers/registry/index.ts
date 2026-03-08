@@ -5,7 +5,7 @@ import { builtinDrawerPlugins } from "./builtins";
 export interface DrawerRegistry {
   drawerTypes: DrawerType[];
   getDrawerType: (value: unknown, binding?: JsonBinding, hintedType?: DrawerType | null) => DrawerType;
-  getPluginByType: (type: DrawerType) => DrawerPlugin;
+  getPluginByType: (type: DrawerType) => DrawerPlugin | undefined;
   getDrawerByType: (type: DrawerType, api: DrawerRuntimeApi) => DrawerCallback;
 }
 
@@ -22,12 +22,12 @@ export function createDrawerRegistry(plugins: DrawerPlugin[] = builtinDrawerPlug
   const drawerTypes = plugins.map((plugin) => plugin.type);
   const sortedByPriority = [...plugins].sort((a, b) => a.detectPriority - b.detectPriority);
 
-  const getPluginByType = (type: DrawerType): DrawerPlugin => pluginByType[type] ?? pluginByType.string;
+  const getPluginByType = (type: DrawerType): DrawerPlugin | undefined => pluginByType[type] ?? undefined;
 
   const getDrawerType = (value: unknown, _binding?: JsonBinding, hintedType?: DrawerType | null): DrawerType => {
     if (hintedType) {
       const hintedPlugin = getPluginByType(hintedType);
-      if (hintedPlugin.supportsHint(value)) return hintedType;
+      if (hintedPlugin && hintedPlugin.supportsHint(value)) return hintedType;
     }
     if (value === null || value === undefined) return "string";
     for (let i = 0; i < sortedByPriority.length; i += 1) {
@@ -40,6 +40,7 @@ export function createDrawerRegistry(plugins: DrawerPlugin[] = builtinDrawerPlug
   const getDrawerByType = (type: DrawerType, api: DrawerRuntimeApi): DrawerCallback => {
     const plugin = getPluginByType(type);
     return (container, label, value, beforeNode, binding) => {
+      if (!plugin) return;
       if (beforeNode && binding) {
         plugin.render(api, { container, label, value, beforeNode, binding });
         return;

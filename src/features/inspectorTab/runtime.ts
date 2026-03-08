@@ -33,7 +33,7 @@ export function createInspectorRuntime(callbacks: MutationCallbacks): InspectorR
     if (!binding?.path) return null;
     const hinted = typeHintsStore.hints[binding.path];
     if (!hinted) return null;
-    if (!registry.getPluginByType(hinted).supportsHint(value)) return null;
+    if (!registry.getPluginByType(hinted)?.supportsHint(value)) return null;
     return hinted;
   }
 
@@ -136,7 +136,7 @@ export function createInspectorRuntime(callbacks: MutationCallbacks): InspectorR
   ): void {
     const drawer = getDrawerByType(targetType);
     const currentValue = getBoundValue(binding, sourceValue);
-    const normalizedValue = registry.getPluginByType(targetType).normalize(currentValue);
+    const normalizedValue = registry.getPluginByType(targetType)?.normalize(currentValue) ?? currentValue;
     let nextLabel = label;
     if (binding?.parent && !Array.isArray(binding.parent) && typeof binding.key === "string") {
       nextLabel = binding.key;

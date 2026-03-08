@@ -3,7 +3,8 @@ export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
 export type JsonObject = { [key: string]: JsonValue };
 export type JsonArray = JsonValue[];
 
-export type DrawerType = any;
+export type DrawerType = string;
+export type TypeHintToken = DrawerType;
 
 export interface JsonBinding {
   parent: Record<string | number, unknown>;
