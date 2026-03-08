@@ -1,6 +1,5 @@
 import type { DrawerPlugin } from "../contracts";
 import { arrayDrawerPlugin } from "../default-drawers/arrayDrawer";
-import { graphDrawerPlugin } from "../default-drawers/graphDrawer";
 import { booleanDrawerPlugin } from "../default-drawers/booleanDrawer";
 import { colorDrawerPlugin } from "../default-drawers/colorDrawer";
 import { imageLinkDrawerPlugin } from "../default-drawers/imageLinkDrawer";
@@ -18,7 +17,6 @@ export const builtinDrawerPlugins: DrawerPlugin[] = [
   vector2DrawerPlugin,
   vector3DrawerPlugin,
   booleanDrawerPlugin,
-  graphDrawerPlugin,
   objectDrawerPlugin,
   arrayDrawerPlugin
 ];
